@@ -2,37 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use App\Client;
 use App\Http\Requests\StoreJournalRequest;
-use App\Journal;
+use App\Services\Journals\JournalService;
 use Illuminate\Http\JsonResponse;
 
 class JournalController extends Controller
 {
-    public function index(Client $client): JsonResponse
+    public function __construct(
+        protected JournalService $journalService
+    ) { }
+
+    public function index(int $clientId): JsonResponse
     {
-        return response()->json([
-            'journals' => $client->journals()->orderBy('date', 'desc')->get(),
-        ]);
+        $journals = $this->journalService->getJournalsForClient($clientId);
+
+        return response()->json(['journals' => $journals]);
     }
 
-    public function store(StoreJournalRequest $request, Client $client): JsonResponse
+    public function store(StoreJournalRequest $request, int $clientId): JsonResponse
     {
-        $journal = $client->journals()->create([
-            'date' => $request->input('date'),
-            'text' => $request->input('text'),
-        ]);
+        $journal = $this->journalService->createJournalForClient($clientId, $request->validated());
 
         return response()->json($journal, 201);
     }
 
-    public function destroy(Client $client, Journal $journal): JsonResponse
+    public function destroy(int $clientId, int $journalId): JsonResponse
     {
-        if ($journal->client_id !== $client->id) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $journal->delete();
+        $this->journalService->deleteJournalForClient($clientId, $journalId);
 
         return response()->json(['message' => 'Journal deleted successfully.']);
     }
