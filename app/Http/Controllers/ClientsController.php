@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Client;
+use App\Constants\BookingFilterType;
 use App\Http\Requests\StoreClientRequest;
+use App\Services\Bookings\Filters\BookingFilterContext;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ClientsController extends Controller
@@ -26,11 +29,27 @@ class ClientsController extends Controller
         return view('clients.create');
     }
 
-    public function show(Client $client)
+    public function show(Request $request, Client $client)
     {
-        $client->load(['bookings' => function(HasMany $query) {
-            $query->orderBy('start', 'DESC');
+        $filterType = $request->query('filter', BookingFilterType::ALL);
+
+        if (!BookingFilterType::isValid($filterType)) {
+            $filterType = BookingFilterType::ALL;
+        }
+
+        $client->load(['bookings' => function (HasMany $query) use ($filterType) {
+            BookingFilterContext::resolve($filterType)
+                ->filter($query)
+                ->orderBy('start', 'desc');
         }]);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'client' => [
+                    'bookings' => $client->bookings
+                ]
+            ]);
+        }
 
         return view('clients.show', ['client' => $client]);
     }
