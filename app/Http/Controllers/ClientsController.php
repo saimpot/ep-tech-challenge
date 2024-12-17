@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Client;
 use App\Http\Requests\StoreClientRequest;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
@@ -27,7 +28,11 @@ class ClientsController extends Controller
 
     public function show(Client $client)
     {
-        return view('clients.show', ['client' => $client->load('bookings')]);
+        $client->load(['bookings' => function(HasMany $query) {
+            $query->orderBy('start', 'DESC');
+        }]);
+
+        return view('clients.show', ['client' => $client]);
     }
 
     public function store(StoreClientRequest $request): JsonResponse
