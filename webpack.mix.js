@@ -15,3 +15,15 @@ require('mix-tailwindcss');
 mix.js('resources/js/app.js', 'public/js')
     .sass('resources/sass/app.scss', 'public/css')
     .tailwind();
+
+mix.webpackConfig({
+    devServer: {
+        host: '0.0.0.0',
+        port: 8080,
+        public: 'localhost:8080',
+        hot: true,
+        watchOptions: {
+            poll: true,
+        },
+    },
+});

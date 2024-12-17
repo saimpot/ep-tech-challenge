@@ -6,24 +6,32 @@
             <div class="form-group">
                 <label for="name">Name</label>
                 <input type="text" id="name" class="form-control" v-model="client.name">
+                <span class="text-danger" v-if="errors.name">{{ errors.name[0] }}</span>
             </div>
+
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="text" id="email" class="form-control" v-model="client.email">
+                <span class="text-danger" v-if="errors.email">{{ errors.email[0] }}</span>
             </div>
+
             <div class="form-group">
                 <label for="phone">Phone</label>
                 <input type="text" id="phone" class="form-control" v-model="client.phone">
+                <span class="text-danger" v-if="errors.phone">{{ errors.phone[0] }}</span>
             </div>
+
             <div class="form-group">
-                <label for="name">Address</label>
+                <label for="address">Address</label>
                 <input type="text" id="address" class="form-control" v-model="client.address">
             </div>
+
             <div class="flex">
                 <div class="form-group flex-1">
                     <label for="city">City</label>
                     <input type="text" id="city" class="form-control" v-model="client.city">
                 </div>
+
                 <div class="form-group flex-1">
                     <label for="postcode">Postcode</label>
                     <input type="text" id="postcode" class="form-control" v-model="client.postcode">
@@ -53,17 +61,33 @@ export default {
                 address: '',
                 city: '',
                 postcode: '',
-            }
-        }
+            },
+            errors: {},
+        };
     },
 
     methods: {
         storeClient() {
-            axios.post('/clients', this.client)
-                .then((data) => {
-                    window.location.href = data.data.url;
+            axios
+                .post('/clients', this.client)
+                .then((response) => {
+                    window.location.href = response.data.url;
+                })
+                .catch((error) => {
+                    if (error.response.status === 422) {
+                        this.errors = error.response.data.errors;
+                    } else {
+                        alert('Something went wrong. Please try again.');
+                    }
                 });
-        }
-    }
-}
+        },
+    },
+};
 </script>
+
+<style>
+.text-danger {
+    color: red;
+    font-size: 0.875rem;
+}
+</style>

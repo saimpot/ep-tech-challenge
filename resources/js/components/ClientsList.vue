@@ -12,6 +12,7 @@
                     <th>Email</th>
                     <th>Phone</th>
                     <th>Number of Bookings</th>
+                    <th>Number of Journals</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -21,6 +22,7 @@
                     <td>{{ client.email }}</td>
                     <td>{{ client.phone }}</td>
                     <td>{{ client.bookings_count }}</td>
+                    <td>{{ client.journals_count }}</td>
                     <td>
                         <a class="btn btn-primary btn-sm" :href="`/clients/${client.id}`">View</a>
                         <button class="btn btn-danger btn-sm" @click="deleteClient(client)">Delete</button>
@@ -40,8 +42,19 @@ export default {
     props: ['clients'],
 
     methods: {
-        deleteClient(client) {
-            axios.delete(`/clients/${client.id}`);
+        async deleteClient(client) {
+            if (!confirm(`Are you sure you want to delete ${client.name}?`)) {
+                return;
+            }
+
+            try {
+                await axios.delete(`/clients/${client.id}`);
+                this.clients = this.clients.filter(c => c.id !== client.id);
+                alert(`${client.name} has been deleted successfully.`);
+            } catch (error) {
+                console.error(error);
+                alert('Failed to delete the client. Please try again.');
+            }
         }
     }
 }

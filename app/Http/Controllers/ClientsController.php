@@ -3,17 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Client;
+use App\Constants\BookingFilterType;
+use App\Http\Requests\StoreClientRequest;
+use App\Services\Clients\ClientService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ClientsController extends Controller
 {
+    public function __construct(
+        protected ClientService $clientService
+    ) { }
+
     public function index()
     {
-        $clients = Client::all();
-
-        foreach ($clients as $client) {
-            $client->append('bookings_count');
-        }
+        $clients = $this->clientService->getClientsForUser();
 
         return view('clients.index', ['clients' => $clients]);
     }
@@ -23,31 +27,35 @@ class ClientsController extends Controller
         return view('clients.create');
     }
 
-    public function show($client)
+    public function show(Request $request, Client $client)
     {
-        $client = Client::where('id', $client)->first();
+        $clientData = $this->clientService
+            ->getClientWithBookings(
+                $client,
+                $request->query('filter', BookingFilterType::ALL)
+            );
 
-        return view('clients.show', ['client' => $client]);
+        if ($request->ajax()) {
+            return response()->json(['client' => ['bookings' => $clientData['bookings']]]);
+        }
+
+        return view('clients.show', ['client' => $clientData]);
     }
 
-    public function store(Request $request)
+    public function store(StoreClientRequest $request): JsonResponse
     {
-        $client = new Client;
-        $client->name = $request->get('name');
-        $client->email = $request->get('email');
-        $client->phone = $request->get('phone');
-        $client->adress = $request->get('adress');
-        $client->city = $request->get('city');
-        $client->postcode = $request->get('postcode');
-        $client->save();
+        $this->clientService->createClient($request->validated());
 
-        return $client;
+        return response()->json([
+            'message' => 'Client created successfully.',
+            'url' => route('clients.index'),
+        ], 201);
     }
 
-    public function destroy($client)
+    public function destroy(int $clientId): JsonResponse
     {
-        Client::where('id', $client)->delete();
+        $this->clientService->deleteClient($clientId);
 
-        return 'Deleted';
+        return response()->json(['message' => 'Client deleted successfully.']);
     }
 }
