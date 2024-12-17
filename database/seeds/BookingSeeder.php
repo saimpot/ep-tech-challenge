@@ -11,12 +11,12 @@ class BookingSeeder extends Seeder
      *
      * @return void
      */
-    public function run()
+    public function run(): void
     {
         $clients = Client::all();
 
         foreach ($clients as $client) {
-            $numberOfBookings = rand(0, 30);
+            $numberOfBookings = mt_rand(0, 30);
 
             factory(Booking::class, $numberOfBookings)->create([
                 'client_id' => $client->id,
