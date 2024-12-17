@@ -40,8 +40,19 @@ export default {
     props: ['clients'],
 
     methods: {
-        deleteClient(client) {
-            axios.delete(`/clients/${client.id}`);
+        async deleteClient(client) {
+            if (!confirm(`Are you sure you want to delete ${client.name}?`)) {
+                return;
+            }
+
+            try {
+                await axios.delete(`/clients/${client.id}`);
+                this.clients = this.clients.filter(c => c.id !== client.id);
+                alert(`${client.name} has been deleted successfully.`);
+            } catch (error) {
+                console.error(error);
+                alert('Failed to delete the client. Please try again.');
+            }
         }
     }
 }
