@@ -4,16 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Client;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ClientsController extends Controller
 {
     public function index()
     {
-        $clients = Client::all();
-
-        foreach ($clients as $client) {
-            $client->append('bookings_count');
-        }
+        $clients = Client::query()
+            ->where('user_id', Auth::id())
+            ->with('bookings')
+            ->withCount('bookings')
+            ->get();
 
         return view('clients.index', ['clients' => $clients]);
     }
@@ -23,14 +24,9 @@ class ClientsController extends Controller
         return view('clients.create');
     }
 
-    public function show($client)
+    public function show(Client $client)
     {
-        $client = Client::query()
-            ->where('id', $client)
-            ->with('bookings')
-            ->firstOrFail();
-
-        return view('clients.show', ['client' => $client]);
+        return view('clients.show', ['client' => $client->load('bookings')]);
     }
 
     public function store(Request $request)
