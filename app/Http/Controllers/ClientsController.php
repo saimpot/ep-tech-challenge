@@ -5,21 +5,19 @@ namespace App\Http\Controllers;
 use App\Client;
 use App\Constants\BookingFilterType;
 use App\Http\Requests\StoreClientRequest;
-use App\Services\Bookings\Filters\BookingFilterContext;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Services\Clients\ClientService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class ClientsController extends Controller
 {
+    public function __construct(
+        protected ClientService $clientService
+    ) { }
+
     public function index()
     {
-        $clients = Client::query()
-            ->where('user_id', Auth::id())
-            ->with(['bookings', 'journals'])
-            ->withCount(['bookings', 'journals'])
-            ->get();
+        $clients = $this->clientService->getClientsForUser();
 
         return view('clients.index', ['clients' => $clients]);
     }
@@ -31,42 +29,22 @@ class ClientsController extends Controller
 
     public function show(Request $request, Client $client)
     {
-        $filterType = $request->query('filter', BookingFilterType::ALL);
-
-        if (!BookingFilterType::isValid($filterType)) {
-            $filterType = BookingFilterType::ALL;
-        }
-
-        $client->load(['bookings' => function (HasMany $query) use ($filterType) {
-            BookingFilterContext::resolve($filterType)
-                ->filter($query)
-                ->orderBy('start', 'desc');
-        }]);
+        $clientData = $this->clientService
+            ->getClientWithBookings(
+                $client,
+                $request->query('filter', BookingFilterType::ALL)
+            );
 
         if ($request->ajax()) {
-            return response()->json([
-                'client' => [
-                    'bookings' => $client->bookings
-                ]
-            ]);
+            return response()->json(['client' => ['bookings' => $clientData['bookings']]]);
         }
 
-        return view('clients.show', ['client' => $client]);
+        return view('clients.show', ['client' => $clientData]);
     }
 
     public function store(StoreClientRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-
-        $client = new Client;
-        $client->name = $validated['name'];
-        $client->email = $validated['email'] ?? null;
-        $client->phone = $validated['phone'] ?? null;
-        $client->address = $request->get('address');
-        $client->city = $request->get('city');
-        $client->postcode = $request->get('postcode');
-        $client->user_id = auth()->id();
-        $client->save();
+        $this->clientService->createClient($request->validated());
 
         return response()->json([
             'message' => 'Client created successfully.',
@@ -74,12 +52,10 @@ class ClientsController extends Controller
         ], 201);
     }
 
-    public function destroy(Client $client): JsonResponse
+    public function destroy(int $clientId): JsonResponse
     {
-        if ($client->delete()) {
-            return response()->json(['message' => 'Client deleted successfully.']);
-        }
+        $this->clientService->deleteClient($clientId);
 
-        return response()->json(['message' => 'Failed to delete client.'], 500);
+        return response()->json(['message' => 'Client deleted successfully.']);
     }
 }
