@@ -31,6 +31,16 @@ class Client extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function journals(): HasMany
+    {
+        return $this->hasMany(Journal::class);
+    }
+
+    public function getJournalsCountAttribute(): int
+    {
+        return $this->journals()->count();
+    }
+
     public function getBookingsCountAttribute(): int
     {
         return $this->bookings->count();

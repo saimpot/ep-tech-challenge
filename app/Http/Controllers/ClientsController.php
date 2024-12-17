@@ -17,8 +17,8 @@ class ClientsController extends Controller
     {
         $clients = Client::query()
             ->where('user_id', Auth::id())
-            ->with('bookings')
-            ->withCount('bookings')
+            ->with(['bookings', 'journals'])
+            ->withCount(['bookings', 'journals'])
             ->get();
 
         return view('clients.index', ['clients' => $clients]);
